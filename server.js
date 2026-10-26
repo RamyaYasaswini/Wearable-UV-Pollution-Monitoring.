@@ -11,6 +11,7 @@ const ESP32_URL = process.env.ESP32_URL || "http://192.168.4.1";
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
 let latestReading = {
   temperature: null,
