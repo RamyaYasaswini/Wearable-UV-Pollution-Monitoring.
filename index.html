@@ -4,123 +4,707 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wearable Sensor Dashboard</title>
+  <title>Wearable Sensor Monitoring Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 20px;
-      background: #f3f6fa;
-      color: #222;
+    * {
+      box-sizing: border-box;
     }
 
-    h1 {
-      color: #174a70;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe, #f5f3ff 50%, #dcfce7);
+      color: #172033;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(120deg, #111827, #1d4ed8 58%, #7c3aed);
+      color: white;
+      text-align: center;
+      padding: 30px 16px;
+      box-shadow: 0 5px 18px #1e3a8a33;
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(24px, 4vw, 36px);
+    }
+
+    header p {
+      margin: 0;
+      color: #dbeafe;
+    }
+
+    main {
+      max-width: 1250px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .status {
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
+      background: #fef3c7;
+      color: #92400e;
+      overflow-wrap: anywhere;
+    }
+
+    .status.good {
+      background: #bbf7d0;
+      color: #166534;
+    }
+
+    .status.bad {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    h2 {
+      color: #1e3a8a;
+      margin: 28px 0 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
     }
 
     .card {
+      position: relative;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid white;
+      box-shadow: 0 8px 24px #0f172a12;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background: linear-gradient(90deg, #06b6d4, #6366f1);
+    }
+
+    .card:nth-child(1)::before { background: #f97316; }
+    .card:nth-child(2)::before { background: #16a34a; }
+    .card:nth-child(3)::before { background: #eab308; }
+    .card:nth-child(4)::before { background: #e11d48; }
+    .card:nth-child(5)::before { background: #2563eb; }
+    .card:nth-child(6)::before { background: #7c3aed; }
+    .card:nth-child(7)::before { background: #0f766e; }
+    .card:nth-child(8)::before { background: #d97706; }
+
+    .label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .value {
+      font-size: clamp(27px, 3vw, 35px);
+      font-weight: 800;
+      margin: 14px 0;
+      color: #0f172a;
+      overflow-wrap: anywhere;
+    }
+
+    .unit {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 16px;
+      padding: 20px;
+      margin-top: 22px;
+      box-shadow: 0 8px 24px #0f172a12;
+    }
+
+    .graphs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .graph-card {
       background: white;
-      padding: 18px;
-      margin: 12px 0;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px #0001;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      min-width: 0;
+      box-shadow: 0 4px 16px #0f172a0c;
+    }
+
+    .graph-card h3 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: #1e3a8a;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 250px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
     }
 
     button {
-      padding: 12px 18px;
-      background: #1769aa;
-      color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
+      padding: 12px 18px;
+      background: #1d4ed8;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
       cursor: pointer;
     }
 
-    #status {
-      margin: 16px 0;
+    button:hover {
+      background: #1e40af;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .secondary {
+      background: #475569;
+    }
+
+    .secondary:hover {
+      background: #334155;
+    }
+
+    .note {
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .info-row {
+      margin: 12px 0;
+      overflow-wrap: anywhere;
+    }
+
+    footer {
+      text-align: center;
+      color: #64748b;
+      font-size: 13px;
+      padding: 24px;
+    }
+
+    @media (max-width: 500px) {
+      .graphs-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-container {
+        height: 230px;
+      }
+
+      .card {
+        padding: 16px;
+      }
     }
   </style>
 </head>
+
 <body>
-  <h1>Wearable Sensor Dashboard</h1>
-  <p>Live connection test for Member 4's API</p>
+  <header>
+    <h1>Wearable Sensor Monitoring System</h1>
+    <p>ESP32 Live Environmental and Movement Dashboard</p>
+  </header>
 
-  <div id="status">Waiting to connect...</div>
+  <main>
+    <div id="status" class="status">
+      Connecting to the sensor API...
+    </div>
 
-  <div class="card">
-    <h3>Temperature</h3>
-    <p id="temperature">--</p>
-  </div>
+    <h2>Original Sensor Parameters</h2>
 
-  <div class="card">
-    <h3>Humidity</h3>
-    <p id="humidity">--</p>
-  </div>
+    <div class="grid">
+      <div class="card">
+        <div class="label">Temperature</div>
+        <div class="value" id="temperature">--</div>
+        <div class="unit">Degrees Celsius (°C)</div>
+      </div>
 
-  <div class="card">
-    <h3>UV Index</h3>
-    <p id="uvIndex">--</p>
-  </div>
+      <div class="card">
+        <div class="label">Humidity</div>
+        <div class="value" id="humidity">--</div>
+        <div class="unit">Relative humidity (%)</div>
+      </div>
 
-  <div class="card">
-    <h3>Pollution</h3>
-    <p id="pollution">--</p>
-  </div>
+      <div class="card">
+        <div class="label">UV Index</div>
+        <div class="value" id="uvIndex">--</div>
+        <div class="unit">Estimated UV index</div>
+      </div>
 
-  <div class="card">
-    <h3>Last Reading Timestamp</h3>
-    <p id="timestamp">--</p>
-  </div>
+      <div class="card">
+        <div class="label">Pollution / Dust</div>
+        <div class="value" id="pollution">--</div>
+        <div class="unit">Raw dust sensor ADC (0–4095)</div>
+      </div>
+    </div>
 
-  <button onclick="fetchSensorData()">Refresh Readings</button>
+    <h2>Additional Sensor Parameters</h2>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Atmospheric Pressure</div>
+        <div class="value" id="pressure">--</div>
+        <div class="unit">Hectopascals (hPa)</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Estimated Altitude</div>
+        <div class="value" id="altitude">--</div>
+        <div class="unit">Meters (m)</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Acceleration Change</div>
+        <div class="value" id="acceleration">--</div>
+        <div class="unit">Movement indicator (m/s²)</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Alarm Status</div>
+        <div class="value" id="alarmStatus">--</div>
+        <div class="unit" id="alarmReason">Waiting for sensor data</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Live Graphs — All Seven Parameters</h2>
+
+      <p class="note">
+        Each graph has its own scale and unit. New readings are added
+        automatically every five seconds. The dashboard retains the latest
+        30 points for each parameter while this page is open.
+      </p>
+
+      <div class="graphs-grid">
+        <div class="graph-card">
+          <h3>Temperature (°C)</h3>
+          <div class="chart-container">
+            <canvas id="temperatureChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>Humidity (%)</h3>
+          <div class="chart-container">
+            <canvas id="humidityChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>UV Index</h3>
+          <div class="chart-container">
+            <canvas id="uvChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>Dust Sensor (Raw ADC)</h3>
+          <div class="chart-container">
+            <canvas id="dustChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>Atmospheric Pressure (hPa)</h3>
+          <div class="chart-container">
+            <canvas id="pressureChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>Altitude (m)</h3>
+          <div class="chart-container">
+            <canvas id="altitudeChart"></canvas>
+          </div>
+        </div>
+
+        <div class="graph-card">
+          <h3>Acceleration Change (m/s²)</h3>
+          <div class="chart-container">
+            <canvas id="accelerationChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="refreshButton" type="button">
+          Refresh Readings
+        </button>
+
+        <button id="clearGraphButton" class="secondary" type="button">
+          Clear Graphs
+        </button>
+
+        <span class="unit" id="lastUpdated">Last update: waiting...</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>System Information</h2>
+
+      <p class="info-row">
+        <strong>Node.js API:</strong>
+        <span id="connection">Checking...</span>
+      </p>
+
+      <p class="info-row">
+        <strong>ESP32 router Wi-Fi:</strong>
+        <span id="wifiStatus">--</span>
+      </p>
+
+      <p class="info-row">
+        <strong>Latest reading timestamp:</strong>
+        <span id="timestamp">--</span>
+      </p>
+
+      <p class="note">
+        Sensor notes: dust is a raw ADC reading, not calibrated pollution
+        concentration. UV index is estimated and depends on sensor calibration.
+        Altitude is estimated from atmospheric pressure. Acceleration change
+        indicates movement and is not, by itself, a validated fall detector.
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    Wearable Sensor Monitoring System | ESP32 + Node.js
+  </footer>
 
   <script>
+    const API_URL = "http://localhost:3000/api/sensor-data";
+    const REFRESH_INTERVAL = 2000;
+    const MAX_GRAPH_POINTS = 30;
+
+    const statusElement = document.getElementById("status");
+    const refreshButton = document.getElementById("refreshButton");
+
+    let requestInProgress = false;
+    const sensorCharts = {};
+
+    const graphDefinitions = [
+      {
+        id: "temperatureChart",
+        key: "temperature",
+        label: "Temperature (°C)",
+        color: "#2563eb"
+      },
+      {
+        id: "humidityChart",
+        key: "humidity",
+        label: "Humidity (%)",
+        color: "#16a34a"
+      },
+      {
+        id: "uvChart",
+        key: "uvIndex",
+        label: "UV Index",
+        color: "#9333ea"
+      },
+      {
+        id: "dustChart",
+        key: "pollution",
+        label: "Dust ADC",
+        color: "#dc2626"
+      },
+      {
+        id: "pressureChart",
+        key: "pressure",
+        label: "Pressure (hPa)",
+        color: "#0891b2"
+      },
+      {
+        id: "altitudeChart",
+        key: "altitude",
+        label: "Altitude (m)",
+        color: "#d97706"
+      },
+      {
+        id: "accelerationChart",
+        key: "acceleration",
+        label: "Acceleration Change (m/s²)",
+        color: "#0f766e"
+      }
+    ];
+
+    function isValidNumber(value) {
+      return typeof value === "number" && Number.isFinite(value);
+    }
+
+    function displayValue(id, value, decimals, suffix = "") {
+      const element = document.getElementById(id);
+
+      if (!isValidNumber(value)) {
+        element.textContent = "--";
+        return;
+      }
+
+      element.textContent = value.toFixed(decimals) + suffix;
+    }
+
+    function createSensorCharts() {
+      graphDefinitions.forEach(definition => {
+        const canvas = document.getElementById(definition.id);
+
+        sensorCharts[definition.key] = new Chart(canvas, {
+          type: "line",
+
+          data: {
+            labels: [],
+            datasets: [{
+              label: definition.label,
+              data: [],
+              borderColor: definition.color,
+              backgroundColor: definition.color + "18",
+              borderWidth: 2,
+              pointRadius: 2,
+              pointHoverRadius: 5,
+              fill: true,
+              tension: 0.25,
+              spanGaps: false
+            }]
+          },
+
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+
+            interaction: {
+              intersect: false,
+              mode: "index"
+            },
+
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Time"
+                }
+              },
+
+              y: {
+                title: {
+                  display: true,
+                  text: definition.label
+                }
+              }
+            },
+
+            plugins: {
+              legend: {
+                display: false
+              },
+
+              tooltip: {
+                enabled: true
+              }
+            }
+          }
+        });
+      });
+    }
+
+    function updateSensorCharts(data) {
+      const time = data.timestamp &&
+        Number.isFinite(new Date(data.timestamp).getTime())
+          ? new Date(data.timestamp).toLocaleTimeString()
+          : new Date().toLocaleTimeString();
+
+      graphDefinitions.forEach(definition => {
+        const chart = sensorCharts[definition.key];
+
+        if (!chart) return;
+
+        const value = data[definition.key];
+
+        chart.data.labels.push(time);
+
+        chart.data.datasets[0].data.push(
+          isValidNumber(value) ? value : null
+        );
+
+        while (chart.data.labels.length > MAX_GRAPH_POINTS) {
+          chart.data.labels.shift();
+          chart.data.datasets[0].data.shift();
+        }
+
+        chart.update("none");
+      });
+    }
+
+    function clearSensorCharts() {
+      Object.values(sensorCharts).forEach(chart => {
+        chart.data.labels = [];
+
+        chart.data.datasets.forEach(dataset => {
+          dataset.data = [];
+        });
+
+        chart.update();
+      });
+    }
+
     async function fetchSensorData() {
-      const status = document.getElementById("status");
-      status.textContent = "Connecting to API...";
+      if (requestInProgress) return;
+
+      requestInProgress = true;
+      refreshButton.disabled = true;
+
+      statusElement.textContent = "Connecting to API...";
+      statusElement.className = "status";
 
       try {
-        const response = await fetch(
-          "http://localhost:3000/api/sensor-data"
-        );
+        const response = await fetch(API_URL, {
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("API returned HTTP " + response.status);
+        }
 
         const result = await response.json();
 
-        if (!response.ok || !result.success) {
-          throw new Error("API request failed");
+        if (!result.success || !result.data) {
+          throw new Error("Invalid API response");
         }
 
         const data = result.data;
 
-        if (!data || data.timestamp === null) {
-          status.textContent = "Connected, but no readings are available yet.";
+        document.getElementById("connection").textContent =
+          result.connected === true
+            ? "Connected"
+            : result.connected === false
+              ? "ESP32 disconnected"
+              : "API responded";
+
+        if (result.connected === false) {
+          statusElement.textContent =
+            "API is running, but the ESP32 is disconnected. " +
+            (result.error || "Check the ESP32 Wi-Fi connection.");
+
+          statusElement.className = "status bad";
           return;
         }
 
-        document.getElementById("temperature").textContent =
-          data.temperature + " °C";
+        // Original parameters
+        displayValue("temperature", data.temperature, 1, " °C");
+        displayValue("humidity", data.humidity, 1, " %");
+        displayValue("uvIndex", data.uvIndex, 2);
 
-        document.getElementById("humidity").textContent =
-          data.humidity + " %";
+        // Dust raw ADC is mapped to the existing pollution field.
+        displayValue("pollution", data.pollution, 0);
 
-        document.getElementById("uvIndex").textContent =
-          data.uvIndex;
+        // Additional parameters
+        displayValue("pressure", data.pressure, 1, " hPa");
+        displayValue("altitude", data.altitude, 1, " m");
+        displayValue("acceleration", data.acceleration, 2, " m/s²");
 
-        document.getElementById("pollution").textContent =
-          data.pollution;
+        // Alarm status
+        const alarmActive = data.alarm === true;
+        const alarmStatusElement = document.getElementById("alarmStatus");
+
+        alarmStatusElement.textContent =
+          alarmActive ? "WARNING" : "NORMAL";
+
+        alarmStatusElement.style.color =
+          alarmActive ? "#dc2626" : "#15803d";
+
+        document.getElementById("alarmReason").textContent =
+          data.reason || "No alarm reason provided";
+
+        // Connectivity and timestamps
+        document.getElementById("wifiStatus").textContent =
+          data.wifi === true
+            ? "Connected to router"
+            : data.wifi === false
+              ? "Router not connected / AP mode"
+              : "Unknown";
 
         document.getElementById("timestamp").textContent =
-          data.timestamp;
+          data.timestamp &&
+          Number.isFinite(new Date(data.timestamp).getTime())
+            ? new Date(data.timestamp).toLocaleString()
+            : "No timestamp available";
 
-        status.textContent = "Connected successfully!";
+        document.getElementById("lastUpdated").textContent =
+          "Last update: " + new Date().toLocaleTimeString();
+
+        // Update all seven graphs.
+        updateSensorCharts(data);
+
+        statusElement.textContent = alarmActive
+          ? "WARNING: " + (data.reason || "Abnormal condition detected")
+          : "Connected successfully — sensor readings updating";
+
+        statusElement.className = alarmActive
+          ? "status bad"
+          : "status good";
+
       } catch (error) {
-        status.textContent =
-          "Connection failed. Check whether the API server is running.";
-        console.error(error);
+        statusElement.textContent =
+          "Connection failed: " + error.message;
+
+        statusElement.className = "status bad";
+
+        document.getElementById("connection").textContent =
+          "Connection failed";
+
+        console.error("Could not load sensor data:", error);
+
+      } finally {
+        requestInProgress = false;
+        refreshButton.disabled = false;
       }
     }
 
+    document.getElementById("refreshButton").addEventListener(
+      "click",
+      fetchSensorData
+    );
+
+    document.getElementById("clearGraphButton").addEventListener(
+      "click",
+      clearSensorCharts
+    );
+
+    // Initialize the seven charts only once.
+    createSensorCharts();
+
+    // Load immediately and then refresh every five seconds.
     fetchSensorData();
+    setInterval(fetchSensorData, REFRESH_INTERVAL);
   </script>
 </body>
 </html>
