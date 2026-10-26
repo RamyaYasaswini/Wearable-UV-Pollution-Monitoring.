@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wearable Sensor Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f3f6fa;
+      color: #222;
+    }
+
+    h1 {
+      color: #174a70;
+    }
+
+    .card {
+      background: white;
+      padding: 18px;
+      margin: 12px 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0001;
+    }
+
+    button {
+      padding: 12px 18px;
+      background: #1769aa;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #status {
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Wearable Sensor Dashboard</h1>
+  <p>Live connection test for Member 4's API</p>
+
+  <div id="status">Waiting to connect...</div>
+
+  <div class="card">
+    <h3>Temperature</h3>
+    <p id="temperature">--</p>
+  </div>
+
+  <div class="card">
+    <h3>Humidity</h3>
+    <p id="humidity">--</p>
+  </div>
+
+  <div class="card">
+    <h3>UV Index</h3>
+    <p id="uvIndex">--</p>
+  </div>
+
+  <div class="card">
+    <h3>Pollution</h3>
+    <p id="pollution">--</p>
+  </div>
+
+  <div class="card">
+    <h3>Last Reading Timestamp</h3>
+    <p id="timestamp">--</p>
+  </div>
+
+  <button onclick="fetchSensorData()">Refresh Readings</button>
+
+  <script>
+    async function fetchSensorData() {
+      const status = document.getElementById("status");
+      status.textContent = "Connecting to API...";
+
+      try {
+        const response = await fetch(
+          "http://localhost:3000/api/sensor-data"
+        );
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error("API request failed");
+        }
+
+        const data = result.data;
+
+        if (!data || data.timestamp === null) {
+          status.textContent = "Connected, but no readings are available yet.";
+          return;
+        }
+
+        document.getElementById("temperature").textContent =
+          data.temperature + " °C";
+
+        document.getElementById("humidity").textContent =
+          data.humidity + " %";
+
+        document.getElementById("uvIndex").textContent =
+          data.uvIndex;
+
+        document.getElementById("pollution").textContent =
+          data.pollution;
+
+        document.getElementById("timestamp").textContent =
+          data.timestamp;
+
+        status.textContent = "Connected successfully!";
+      } catch (error) {
+        status.textContent =
+          "Connection failed. Check whether the API server is running.";
+        console.error(error);
+      }
+    }
+
+    fetchSensorData();
+  </script>
+</body>
+</html>
